@@ -1,0 +1,30 @@
+with all_without_end_date
+as(
+	select SALE_EMPLOYEE_CODE,count(*) as c from dbo.SALE_EMPLOYEE_TEAM
+	where TO_DATE is null
+	group by SALE_EMPLOYEE_CODE
+	having count(*)>1
+  ),
+ calculate_to_dates 
+ as (
+	select  PK,
+			SALE_EMPLOYEE_CODE,
+			SALE_TEAM_CODE,
+			from_date,
+			to_date,
+			convert(date,dateadd(day,-1,lead(FROM_DATE,1) over(partition by SALE_EMPLOYEE_CODE order by from_date)))  as previous_from_date
+		from dbo.SALE_EMPLOYEE_TEAM
+		where SALE_EMPLOYEE_CODE in (select SALE_EMPLOYEE_CODE from all_without_end_date)
+	),
+	list_for_update
+	as	(	
+	select * from calculate_to_dates
+	where TO_DATE is null and previous_from_date is not null
+	)
+
+update  emps
+set emps.TO_DATE = lst.previous_from_date
+from dbo.SALE_EMPLOYEE_TEAM emps
+inner join list_for_update lst
+on emps.PK = lst.PK
+
