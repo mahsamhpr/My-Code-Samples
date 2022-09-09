@@ -1,0 +1,12 @@
+select
+              to_timestamp($1:SCORING_DATE::int/1000000)::DATE,
+              $1:PK::STRING as PK,
+              $1:PREDICTION_PROBABILITY::NUMERIC(6,5),
+              $1:MODEL_NAME::STRING,
+              $1:MODEL_VERSION::STRING,
+             $1:SCORING_DATETIME_UTC::TIMESTAMP,
+              metadata$filename,
+              metadata$file_row_number,
+              current_timestamp
+       from @DM.ml.CURATED_DATA_ZONE_ML_STAGE/churn/scoring/output/dev-mahsa-new-time-period/( file_format  => 'dm.ml.PARQUET_FILE_FORMAT', pattern=>'.*\\.parquet') t
+           where pk like 'SA3193358%'
