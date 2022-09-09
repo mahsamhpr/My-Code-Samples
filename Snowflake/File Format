@@ -1,0 +1,33 @@
+File format
+Great document to Read: https://docs.snowflake.com/en/user-guide/data-load-transform.html
+For checking out the details of settings for a created file format:
+
+		Describe file format DEV_DWH.STG.json_file_format;
+
+
+For some of the file formats, we already have for CSV, json, avro, parquet:
+	- Json: default_json_format
+	- Json.gzip: STRIP_OUTER_ARRAY_JSON_FORMAT
+		○ Example: 
+		SELECT$1,
+		metadata$filename,
+		metadata$file_row_number,
+		current_timestamp
+		from
+		@DWH.STG."raw_data_zone"/Sale/Serviceplatform/web/v2/2021/10/12/
+		(file_format=>'DEV_DWH.STG.STRIP_OUTER_ARRAY_JSON_FORMAT',pattern=>'.*\.json.gzip')
+	- Dwh.stg.CSV_TAB_SKIP_HEADER
+	- Dwh.stg.CSV_SEMICOLON_SKIP_HEADER
+		
+		
+Create file format, Show grants:
+	create or replace file format STRIP_OUTER_ARRAY_JSON_FORMAT
+	  type = json
+	  STRIP_OUTER_ARRAY = TRUE;
+	
+	showgrantsonfileformatDEV_DWH.STG.STRIP_OUTER_ARRAY_JSON_FORMAT;
+	
+	describefileformatDEV_DWH.STG.STRIP_OUTER_ARRAY_JSON_FORMAT;
+	
+Show all file format:
+Show file formats in schema dwh.stg;
