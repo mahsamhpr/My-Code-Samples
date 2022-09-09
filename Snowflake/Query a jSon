@@ -1,0 +1,9 @@
+select EVENT_PAYLOAD:otherPayer.email::string as otherpayer_email,
+EVENT_PAYLOAD:otherPayer.exerpMemberId.clubId::string as clubId,
+EVENT_PAYLOAD:otherPayer.exerpMemberId.id::string as id,
+concat(clubId,'p',id)asotherpayer_membercode,
+EVENT_PAYLOAD:member.exerpMemberId.id::string as m_id,
+EVENT_PAYLOAD:member.exerpMemberId.clubId::string as c_id,
+concat(c_id,'p',m_id)asmembercode
+from DWH.psa.SP_WEB_SALE
+where EVENT_PAYLOAD:member.exerpMemberId.clubId::string='220'and otherpayer_membercode='220p320410'
