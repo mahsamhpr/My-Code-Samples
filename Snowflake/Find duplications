@@ -1,0 +1,3 @@
+select*
+fromdm.ml.FEATURE_DEMOGRAPHICS_EXPANDING
+qualifycount(*)over(partitionbySNAPSHOT_DATE,PK)>1
