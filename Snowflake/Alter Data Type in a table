@@ -1,0 +1,1 @@
+alter table DWH.EM.CLIPCARD_CONSUMPTION alter PUNISHMENT_CODE set data type varchar(65535)
