@@ -1,0 +1,39 @@
+with sales as(
+select NK_CONTACT,sum(NET_AMOUNT)as total_spent
+from dm.rpt.FACT_SALE
+where SALE_DATE>=dateadd(month,-12,current_timestamp)
+group by NK_CONTACT),
+members as(
+select *
+from dm.RPT.DIM_CONTACT
+where ETL_ACTIVE=true
+),
+membership_duration as(
+select NK_CONTACT,MEMBERSHIP_DURATION
+from dm.an.FACT_MEMBERSHIP_DAY
+where DATE=DATEFROMPARTS(YEAR(current_timestamp),MONTH(current_timestamp),1)
+group by NK_CONTACT,MEMBERSHIP_DURATION
+),
+rankingas(
+select
+dense_rank()over(orderbytotal_spentdesc) as rank,
+--sales.NK_CONTACT,
+substr(sales.NK_CONTACT,3) Exerp_ID,
+members.FULL_NAMEasName,
+datediff(year,members.DATE_OF_BIRTH,to_date(current_timestamp)) as Age,
+members.GENDER,
+mem_duration.MEMBERSHIP_DURATIONasMembership_Duration_as_Months,
+total_spent
+from sales
+join members
+on sales.NK_CONTACT=members.NK_CONTACT
+join membership_duration mem_duration
+on mem_duration.NK_CONTACT=sales.NK_CONTACT
+where sales.NK_CONTACTlike'SA%'),
+max_rank as(
+select max(rank)as max_rank
+from ranking)
+select *
+from ranking
+left join max_rank
+where rank<max_rank*0.01
