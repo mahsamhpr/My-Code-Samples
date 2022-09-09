@@ -3,6 +3,9 @@ Great document to Read: https://docs.snowflake.com/en/user-guide/data-load-trans
 For checking out the details of settings for a created file format:
 
 		Describe file format DEV_DWH.STG.json_file_format;
+		
+File format:
+When we create a file format using account admin, and we want to recreate it using ETL role. firstly we need to drop the file format using AccountAdmin and then create the file format again by ETL role
 
 
 For some of the file formats, we already have for CSV, json, avro, parquet:
