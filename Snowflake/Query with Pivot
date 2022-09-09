@@ -1,0 +1,12 @@
+with raw as(
+select fma.NK_CONTACT,
+ds.ACTIVITY_GROUP_NAME,
+count(fma.EVENT_CODE)ascnt
+from dm.rp.FACT_MEMBER_ACTIVITY fma
+inner join DM.rp.DIM_SERVICEdsonds.PK_SERVICE=fma.FK_SERVICE
+where EVENT_NAMElike'GX'
+and nk_contact = 'SA3262023'
+group by fma.NK_CONTACT,
+ds.ACTIVITY_GROUP_NAME)
+select * from raw
+pivot(sum(cnt) for ACTIVITY_GROUP_NAME in('Aerobics','Outdoors','Cycling'))
