@@ -1,0 +1,8 @@
+   insert into "DM"."AN"."SNAPSHOTS" (SNAPSHOT_DATE)
+    select DATE::timestamp from dm.rp.DIM_DATE
+    where DATE between '2019-01-07' and dateadd(year, 10, '2019-01-07')
+    and DAY_NUMBER=1
+    order by date
+
+---- If we did not have the table to get the dates from, we could use the Snowflake Generator function
+https://docs.snowflake.com/en/sql-reference/functions/generator.html
