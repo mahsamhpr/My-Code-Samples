@@ -1,0 +1,6 @@
+select NK_CONTACT,
+dim.HISTORIC_MEMBER_CODE_LIST,
+main.VALUE::string as code
+from DM.RPT.DIM_MEMBER_DETAILS dim,
+lateral flatten(input=>dim.HISTORIC_MEMBER_CODE_LIST) main
+where NK_CONTACT='SA200473'and code='531p88166';
