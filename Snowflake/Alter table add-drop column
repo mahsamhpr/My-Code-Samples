@@ -1,0 +1,8 @@
+Alter table DM.ML.SCORING_RESULTS_SE_CHURN_12_WEEK
+Add Training_Duration varchar(500) null;
+
+--Alter table rename column:
+
+alter table table_name rename column old_name to new_name;
+
+Alter table DEV_DWH.PSA.AD_USER drop column OBJECT_PAYLOAD;
