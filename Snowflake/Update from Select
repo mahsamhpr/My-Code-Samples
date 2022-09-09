@@ -1,0 +1,22 @@
+UPDATEDM.ML.SCORING_RESULTS_SE_CHURN_12_WEEKtbl
+SETtbl.TV_CHURN_NEXT_12_WEEKS=abt.TV_CHURN_NEXT_12_WEEKS
+from(
+selectpk,SNAPSHOT_DATE,TV_CHURN_NEXT_12_WEEKSfromdm.ml.ABT_CHURN_12_WEEK)asabt
+where
+tbl.PK=abt.PKandtbl.SCORING_DATE=abt.SNAPSHOT_DATEandtbl.SCORING_DATE='2021-09-20'andtbl.MODEL_NAME='SE1';
+
+
+-------------------------- A more complicated example--------------------------------------------------------------------------------
+UPDATEDWH.EM.PRODUCT_INSTANCEtbl
+SETtbl.FK_PRODUCT=pg.PK_PRODUCT,
+tbl.NK_MASTER_PRODUCT=nvl(concat('FF',pg."master_product_id"),'-1'),
+tbl.NK_PRODUCT=nvl(concat('FF',pg."id"),'-1')
+from
+(
+selectdistinctp.PK_PRODUCT,PK_PRODUCT_GROUP,esp."master_product_id",esp."id"fromDEV_DWH.em.PRODUCT_GROUPpg1
+joindwh.PSA.EXERP_FF_PRODUCTesp
+onesp."product_group_id"=pg1.PRODUCT_GROUP_CODEandPRODUCT_GROUP_CODE<>'na'andpg1.ETL_SOURCE='EXERP_FF'
+joinDWH.EM.PRODUCTp
+onp.PRODUCT_NUMBER=esp."master_product_id"andp.ETL_SOURCE='EXERP_FF'
+)aspg
+wheretbl.FK_PRODUCT_GROUP=pg.PK_PRODUCT_GROUPandpg."id"=tbl.PRODUCT_INSTANCE_CODEandtbl.ETL_SOURCE='EXERP_FF';
