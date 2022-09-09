@@ -1,0 +1,69 @@
+
+with
+     all_rp_an_facts_and_dims as (
+         select
+            concat_ws('.', TABLE_CATALOG, TABLE_SCHEMA, TABLE_NAME) as FQ_TABLE_NAME,
+         TABLE_CATALOG as TABLE_DATABASE,
+        TABLE_SCHEMA,
+                TABLE_NAME,
+                ROW_COUNT,
+                LAST_ALTERED,
+                CREATED
+         from dm.INFORMATION_SCHEMA.TABLES
+         where
+         regexp_count(concat_ws('.', TABLE_CATALOG, TABLE_SCHEMA, TABLE_NAME), 'DM\.(RP|AN|PL)\.(DIM|FACT)_') > 0
+     ),
+
+     pbi_access_history_rp_an_facts_and_dims as (
+    select QUERY_ID, USER_NAME, DIRECT_OBJECTS_ACCESSED,  f1.value:"objectName"::string as FQ_TABLE_NAME,
+           split_part(FQ_TABLE_NAME, '.', 1) as TABLE_DATABASE,
+           split_part(FQ_TABLE_NAME, '.', 2) as TABLE_SCHEMA,
+           split_part(FQ_TABLE_NAME, '.', 3) as TABLE_NAME,
+           f1.value:"columns" as COLUMNS_ACCESSED,
+           a.QUERY_START_TIME
+    from SNOWFLAKE.ACCOUNT_USAGE.ACCESS_HISTORY a , lateral flatten(DIRECT_OBJECTS_ACCESSED) f1
+    where
+
+    regexp_count(FQ_TABLE_NAME, 'DM\.(RP|AN|PL)\.(DIM|FACT)_') > 0 and
+     --f1.value:"objectDomain"::string='Table' AND
+     query_start_time >= dateadd('day', -1, current_timestamp()) AND
+     USER_NAME in ('SYS_PBI')
+),
+    latest_pbi_access as (
+        select
+            FQ_TABLE_NAME,
+            TABLE_DATABASE,
+            TABLE_SCHEMA,
+            TABLE_NAME,
+            max(QUERY_START_TIME) as latest_queried_by_pbi_timestamp
+        from pbi_access_history_rp_an_facts_and_dims
+        group by 1,2,3,4
+    ),
+     rp_an_dup as (
+         select distinct rp.TABLE_NAME, 'yes' as table_exists_in_both_rp_and_an
+         from all_rp_an_facts_and_dims rp
+         inner join all_rp_an_facts_and_dims an using(TABLE_NAME)
+         where rp.TABLE_SCHEMA='RP' and an.TABLE_SCHEMA='AN'
+     ),
+     joined as (
+        select
+        all_rp_an_facts_and_dims.*,
+               latest_pbi_access.latest_queried_by_pbi_timestamp,
+               rp_an_dup.table_exists_in_both_rp_and_an
+         from all_rp_an_facts_and_dims
+         left join latest_pbi_access using(FQ_TABLE_NAME)
+         left join rp_an_dup on all_rp_an_facts_and_dims.TABLE_NAME = rp_an_dup.TABLE_NAME
+     ),
+
+     final as (
+         select
+            FQ_TABLE_NAME, TABLE_DATABASE, TABLE_SCHEMA, TABLE_NAME, ROW_COUNT, LAST_ALTERED::DATE as LAST_ALTERED_DATE, CREATED::DAte as CREATED_DATE,
+                iff(greatest(LAST_ALTERED, CREATED) > current_date-1, 'yes', 'no') as updated_or_created_last_day,
+                iff(latest_queried_by_pbi_timestamp is not null,'yes','no') as queried_by_pbi_last_day,
+                nvl(table_exists_in_both_rp_and_an,'no') as table_exists_in_both_rp_and_an
+                -- latest_queried_by_pbi_timestamp
+         from joined
+         where TABLE_SCHEMA in ('RP', 'AN') or (TABLE_SCHEMA = 'PL' and latest_queried_by_pbi_timestamp is not null)
+     )
+select * from final
+order by 1,2,3,4
