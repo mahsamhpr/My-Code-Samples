@@ -1,0 +1,1 @@
+select to_date(substr(EVENT_PAYLOAD:"UtcTime"::string,0,8))
