@@ -1,1 +1,9 @@
 SELECT GET_DDL('TABLE','DM.RPT.DIM_MEMBER_DETAILS');
+
+
+-- Get DDL for all tables in a Schema
+
+SELECT $$SELECT GET_DDL(''TABLE'',''$$ || table_name || $$'');$$ AS stmt
+FROM INFORMATION_SCHEMA.TABLES
+WHERE table_schema = 'RPT'
+AND table_type = 'BASE TABLE';
