@@ -1,0 +1,1 @@
+select split_part('/api/sats/members/self/qrcode/0757cd9c-32fd-4134-a264-2eb7d734aea7','/', -1)
