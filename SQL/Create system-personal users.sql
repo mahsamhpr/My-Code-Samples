@@ -17,11 +17,11 @@ grant select on table DM.SANDBOX.DIM_MEMBER_DETAILS to role SATS_GX_LOAD_FACTOR_
 
 
 use role SECURITYADMIN;
-grant operate on warehouse ANALYST_SMALL to role SATS_DQ_ROLE;
-grant usage on warehouse ANALYST_SMALL to role SATS_DQ_ROLE;
-grant usage on database DM to role SATS_DQ_ROLE
-grant usage on schema DATA_QUALITY to role SATS_DQ_ROLE
-grant select on table DM.DATA_QUALITY.DIM_CENTER to role SATS_DQ_ROLE
+grant operate on warehouse ANALYST_SMALL to role SATS_ANALYST
+grant usage on warehouse ANALYST_SMALL to role SATS_ANALYST
+grant usage on database DM to role SATS_ANALYST
+grant usage on schema DM.RPT to role SATS_ANALYST
+grant select on all views in schema dm.rpt to role SATS_ANALYST
 
 
 ---------------------------------Personal user --------------------------------------------------------
