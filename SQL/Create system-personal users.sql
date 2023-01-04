@@ -17,15 +17,13 @@ grant select on table DM.SANDBOX.DIM_MEMBER_DETAILS to role SATS_GX_LOAD_FACTOR_
 
 
 use role SECURITYADMIN;
-grant usage on database DM to role SATS_DQ_ROLE
-grant usage on schema DATA_QUALITY to role SATS_DQ_ROLE
-
-grant select on table DM.DATA_QUALITY.DIM_CENTER to role SATS_DQ_ROLE
-
---grant operate to a warehouse to start and stop it
-use role SECURITYADMIN;
 grant operate on warehouse ANALYST_SMALL to role SATS_DQ_ROLE;
 grant usage on warehouse ANALYST_SMALL to role SATS_DQ_ROLE;
+grant usage on database DM to role SATS_DQ_ROLE
+grant usage on schema DATA_QUALITY to role SATS_DQ_ROLE
+grant select on table DM.DATA_QUALITY.DIM_CENTER to role SATS_DQ_ROLE
+
+
 ---------------------------------Personal user --------------------------------------------------------
 use role useradmin;
 CREATE USER larsen_benjamin
