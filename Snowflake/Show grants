@@ -1,0 +1,3 @@
+-- To check all the granted roles to a User
+use role USERADMIN
+show grants to user Mahsa
