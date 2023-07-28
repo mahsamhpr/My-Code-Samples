@@ -1,0 +1,102 @@
+import snowflake.connector
+from azure.identity import DefaultAzureCredential
+from azure.keyvault.secrets import SecretClient
+import pandas as pd
+
+
+SNOWFLAKE_USER = 'sys_matillion'
+SYS_MATILLION_PASSWORD_SECRET_NAME = 'Snowflake-ETL-Admin'
+SNOWFLAKE_ACCOUNT='sats.west-europe.azure'
+SNOWFLAKE_ROLE='ETL'
+
+VAULT_NAME = 'satsprdmdpkeys'
+VAULT_URL = f"https://{VAULT_NAME}.vault.azure.net/"
+
+
+DATABASE='DM'
+SCHEMA='RPT'
+EXCLUDED_TABLES = ['MONTH_IN_REVIEW','MONTH_IN_REVIEW_COMPARE_2M_AGO','FACT_MEMBER_LIFECYCLE','FACT_MEMBER_LIFECYCLE_DAY',
+                  'MN_YEAR_IN_REVIEW','V_DIM_CENTER','V_PBI_METADATA_REFRESH','FACT_LOYALTY','DIM_PERSONAL_TRAINER','FACT_MEMBER_SEGMENT',
+                  'DIM_SERVICE', 'DIM_SUBSCRIPTION', 'FACT_SERVICE_SCHEDULE', 'FACT_MEMBERSHIP_MONTH', 'FACT_PRICE', 'FACT_KPI',
+                   'FACT_COMPANY_AGREEMENT','FACT_SUBSCRIPTION','FACT_PRICE_PERIOD']
+
+
+def get_secret(secret_name):
+  credential = DefaultAzureCredential()
+  secret_client = SecretClient(vault_url=VAULT_URL, credential=credential)
+  return secret_client.get_secret(secret_name).value
+  
+
+
+  
+def main():
+  con = snowflake.connector.connect(
+    user=SNOWFLAKE_USER,
+    password=get_secret(SYS_MATILLION_PASSWORD_SECRET_NAME),
+    account=SNOWFLAKE_ACCOUNT,
+    role=SNOWFLAKE_ROLE
+	)
+  
+  
+  excluded_table_list = ",".join([f"\'{table}\'" for table in EXCLUDED_TABLES])
+  columns = pd.read_sql(
+    f"""
+    select TABLE_CATALOG, TABLE_SCHEMA, TABLE_NAME, COLUMN_NAME
+    from {DATABASE}.INFORMATION_SCHEMA.COLUMNS
+    where
+      TABLE_SCHEMA='{SCHEMA}' and
+      COLUMN_NAME IN ('ETL_CREATEDATETIME', 'ETL_UPDATEDATETIME') and
+      TABLE_NAME NOT IN ({excluded_table_list})
+      ;
+    """,
+    con
+  )
+
+  outer_sql = f"""
+  create or replace view UTIL.UTIL.{DATABASE}_{SCHEMA}_MAX_ETL_TIMESTAMPS AS (
+    with 
+    
+    etl_timestamps as (
+      {{INNER_QUERY_ETL_TIMESTAMPS}}
+    ),
+    
+    info_schema as (
+    	{{INNER_QUERY_INFO_SCHEMA}}
+    )
+    
+    select 
+    	etl_timestamps.*, 
+        info_schema.LAST_ALTERED
+	from etl_timestamps inner join info_schema using (TABLE_CATALOG, TABLE_SCHEMA, TABLE_NAME)
+  );
+  """
+  
+  
+  # list of tables with etl_createdatetime fields
+  query_list = list()
+  for idx, row in columns.iterrows():
+    this_query = f"select '{row['TABLE_CATALOG']}' as TABLE_CATALOG, '{row['TABLE_SCHEMA']}' as TABLE_SCHEMA, '{row['TABLE_NAME']}' as TABLE_NAME, max({row['COLUMN_NAME']}) as max_{row['COLUMN_NAME']} from {row['TABLE_CATALOG']}.{row['TABLE_SCHEMA']}.{row['TABLE_NAME']}"
+    query_list.append(this_query)
+
+    # if not last row
+    if not idx == columns.index[-1]:
+        query_list.append("union all")
+  
+  inner_query_etl_timestamps = "\n".join(query_list)
+  
+  
+  
+  # list of tables with last altered attribute
+  inner_query_info_schema = f"""
+  		select TABLE_CATALOG, TABLE_SCHEMA, TABLE_NAME, LAST_ALTERED
+         from {DATABASE}.INFORMATION_SCHEMA.TABLES
+         WHERE TABLE_CATALOG = '{DATABASE}' AND TABLE_SCHEMA='{SCHEMA}' and lower(TABLE_TYPE) not in ('view', 'materialized view')
+  """
+  
+  
+  final_sql = outer_sql.format(INNER_QUERY_ETL_TIMESTAMPS=inner_query_etl_timestamps, INNER_QUERY_INFO_SCHEMA=inner_query_info_schema)
+  print(final_sql)
+  
+  con.cursor().execute(final_sql)
+  
+main()
