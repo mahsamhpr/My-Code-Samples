@@ -1,0 +1,20 @@
+with access_history_table as (select QUERY_ID, USER_NAME, BASE_OBJECTS_ACCESSED, f1.value:"objectName"::string as TABLE_NAME, f1.value:"columns" as COLUMNS_ACCESSED
+                              from SNOWFLAKE.ACCOUNT_USAGE.ACCESS_HISTORY,
+                                   lateral flatten(base_objects_accessed) f1
+                              where f1.value:"objectName"::string = 'DM.RPT.FACT_VISIT'
+                                and f1.value:"objectDomain"::string = 'Table'
+                                AND query_start_time >= dateadd('day', -30, current_timestamp())
+--                                 AND USER_NAME in ('SYS_MATILLION', 'SYS_PBI')),
+                                AND USER_NAME in ('SYS_MATILLION')),
+     access_history_columns as (select a.*,
+                                       cols.value:"columnName"::string as COLUMN_ACCESSED
+                                from access_history_table a,
+                                     lateral flatten(COLUMNS_ACCESSED) cols),
+     add_query_info as (select access_history_columns.TABLE_NAME, q.*
+                        from SNOWFLAKE.ACCOUNT_USAGE.QUERY_HISTORY q
+                                 inner join access_history_columns using (query_id)
+                        where 1 = 1
+--                           and COLUMN_ACCESSED in ('NK_CENTER')
+                          and QUERY_TYPE = 'SELECT')
+select *
+from add_query_info;
